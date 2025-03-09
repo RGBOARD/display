@@ -3,7 +3,7 @@ CXX = g++
 CXXFLAGS=-Wall -O3 -g -Wextra -Wno-unused-parameter
 
 # Source files and executable
-SRCS = src/main.cpp
+SRCS = src/main.cpp src/display.cpp
 OBJECTS = $(SRCS:.cpp=.o)
 BINARIES = rgboard
 
@@ -20,7 +20,7 @@ all: $(BINARIES)
 
 # Compile .o files
 src/%.o: src/%.cpp
-	$(CXX) $(CXXFLAGS) -I$(RGB_INCDIR) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -Iinclude -I$(RGB_INCDIR) -c -o $@ $<
 
 # Link everything into the final executable
 rgboard: $(OBJECTS) $(RGB_LIBRARY)
