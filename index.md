@@ -1,20 +1,19 @@
+<link rel="stylesheet" href="custom.css">
+
 <p align="center">
-  <img src="view\src\assets\RGB-Icon.png" alt="Project Logo" width="200"/>
+  <img src="RGB-Icon.png" alt="Project Logo" width="200"/>
 </p>
 
-<h2 align="center">Interactive LED Matrix Communication System</h2>
+<h1 align="center">Interactive LED Matrix Communication System</h1>
 
-This project is a dynamic, web-managed communication system designed for the IEEE Computer Society at the University of Puerto Rico, Mayagüez Campus (UPRM). 
+## Controlling RGB LED Display with Raspberry Pi GPIO
 
-The goal is to improve how organizations communicate with members by replacing static methods (like flyers and whiteboards) with a modern, real-time digital display. Using a Raspberry Pi, the system shows announcements, events, and member-generated visuals in a compact and eye-catching format.
+This library by Henner Zeller enables control of 64x64, 32x32, and 16x32 RGB LED panels using Raspberry Pi GPIO. It supports high-quality 24-bit color using 11-bit PWM per channel with CIE1931 color profiling. The library allows chaining up to 96 panels (theoretically) while maintaining ~100Hz refresh rate. Performance varies depending on panel type and color depth. Licensed under GNU GPL v2.0 or later (including GPL v3.0 for broader compatibility).
 
-It features a user-friendly web application for content uploads and scheduling, an admin portal for content moderation and user management, and a backend system that validates and queues display content. This solution enhances member engagement, promotes sustainability by reducing paper use, and fits in small spaces where TVs are impractical.
+<hr>
 
----
-
-## Contributors
-
-- *Marianyelis Jimenez Mercedes* (marianyelis.jimenez1@upr.edu)
-- *Irsaris Pérez Rodríguez* (irsaris.perez@upr.edu)
-- *Jandel Rodríguez Vázquez* (jandel.rodriguez@upr.edu)
-- *Edimar Valentín Kery* (edimar.valentin@upr.edu)
+## Team Members
+- Marianyelis Jimenez Mercedes  (marianyelis.jimenez1@upr.edu)
+- Irsaris Pérez Rodríguez  (irsaris.perez@upr.edu)
+- Jandel Rodríguez Vázquez  (jandel.rodriguez@upr.edu)
+- Edimar Valentín Kery  (edimar.valentin@upr.edu)
