@@ -7,11 +7,9 @@
 
 #include "led-matrix.h"
 
-#include <unistd.h>
-#include <signal.h>
-#include <math.h>
+#include <jsoncpp/json/json.h> // JSON parsing
 
 using rgb_matrix::RGBMatrix;
 using rgb_matrix::Canvas;
-void DrawOnCanvas(Canvas *canvas);
+void DrawDesignOnCanvas(Canvas* canvas, const Json::Value& pixel_data);
 #endif //DISPLAY_H

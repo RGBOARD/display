@@ -4,10 +4,10 @@
 
 #include "../include/queue-client.h"
 #include <curl/curl.h>
-#include <jsoncpp/json/json.h>
 #include <cstdlib>
 
 #define LOGIN_URL "http://localhost:5000/login"
+#define DEQUEUE_URL "http://localhost:5000/queue_item/dequeue"
 
 
 QueueClient::QueueClient(std::string email, std::string password)
@@ -90,23 +90,134 @@ std::string QueueClient::GetJWT()
         return token;
     }
 
-        std::string error_message = json_response["error"].asString();
-        printf("Login failed: no token in response.\nError: %s\n", error_message.c_str());
-        return "";
+    std::string error_message = json_response["error"].asString();
+    printf("Login failed: no token in response.\nError: %s\n", error_message.c_str());
+    return "";
 }
 
-std::string QueueClient::GetDesign()
+bool QueueClient::GetDesign()
 {
-
-    if (this->jwt.empty())
+    auto perform_request = [this](std::string& response) -> long
     {
-        return "";
+        CURL* curl = curl_easy_init();
+        if (!curl)
+        {
+            std::printf("Curl init failed\n");
+            return -1;
+        }
+
+        struct curl_slist* headers = nullptr;
+        std::string auth_header = "Authorization: Bearer " + this->jwt;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        headers = curl_slist_append(headers, auth_header.c_str());
+
+        curl_easy_setopt(curl, CURLOPT_URL, DEQUEUE_URL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ""); // empty body
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        CURLcode result = curl_easy_perform(curl);
+
+        long http_code = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+
+        if (result != CURLE_OK)
+        {
+            std::fprintf(stderr, "Request failed: %s\n", curl_easy_strerror(result));
+            return -1;
+        }
+
+        return http_code;
+    };
+
+    // First attempt
+    std::string response;
+    long status_code = perform_request(response);
+
+    // If unauthorized, refresh token and try again
+    if (status_code == 401)
+    {
+        std::printf("JWT expired or invalid. Getting new token...\n");
+        this->jwt = GetJWT();
+        if (this->jwt.empty())
+        {
+            std::printf("Failed to refresh JWT.\n");
+            return false;
+        }
+
+        response.clear();
+        status_code = perform_request(response);
     }
+
+    if (status_code != 200)
+    {
+        std::printf("Server responded with HTTP %ld\n", status_code);
+        return false;
+    }
+
+    // Parse JSON response
+    Json::CharReaderBuilder reader;
+    Json::Value json_response;
+    std::string errs;
+    std::istringstream s(response);
+
+    if (!Json::parseFromStream(reader, s, &json_response, &errs))
+    {
+        std::printf("Failed to parse response JSON: %s\n", errs.c_str());
+        return false;
+    }
+
+    if (json_response.isMember("pixel_data") && json_response.isMember("duration"))
+    {
+        std::string raw = json_response["pixel_data"].asString();
+
+        // Strip "Design " prefix if present
+        const std::string prefix = "Design ";
+        if (raw.rfind(prefix, 0) == 0)
+            raw = raw.substr(prefix.length());
+
+        Json::CharReaderBuilder builder;
+        Json::Value parsed;
+        std::string errs;
+        std::istringstream ss(raw);
+
+        if (!Json::parseFromStream(builder, ss, &parsed, &errs)) {
+            std::fprintf(stderr, "Failed to parse pixel_data string: %s\n", errs.c_str());
+            return false;
+        }
+
+        this->pixel_data = parsed;
+        this->display_duration = json_response["duration"].asInt();
+        return true;
+    }
+
+    std::string error_message = json_response.get("error", "Unknown error").asString();
+    std::printf("Failed to get design: %s\n", error_message.c_str());
+    return false;
 }
+
 
 size_t QueueClient::CurlWriteCallback(void* contents, size_t size, size_t nmemb, std::string* output)
 {
     size_t total = size * nmemb;
     output->append((char*)contents, total);
     return total;
+}
+
+
+// Getters
+
+int QueueClient::GetDisplayDuration() const
+{
+    return this->display_duration;
+}
+
+Json::Value QueueClient::GetPixelData()
+{
+    return this->pixel_data;
 }
