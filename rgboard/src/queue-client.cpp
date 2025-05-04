@@ -7,7 +7,7 @@
 #include <cstdlib>
 
 #define LOGIN_URL "http://localhost:5000/login"
-#define DEQUEUE_URL "http://localhost:5000/queue_item/dequeue"
+#define CURRENT_URL "http://localhost:5000/rotation/current"
 
 
 QueueClient::QueueClient(std::string email, std::string password)
@@ -111,10 +111,9 @@ bool QueueClient::GetDesign()
         headers = curl_slist_append(headers, "Content-Type: application/json");
         headers = curl_slist_append(headers, auth_header.c_str());
 
-        curl_easy_setopt(curl, CURLOPT_URL, DEQUEUE_URL);
+        curl_easy_setopt(curl, CURLOPT_URL, CURRENT_URL);
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, ""); // empty body
+        curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L); // use GET
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
@@ -172,9 +171,10 @@ bool QueueClient::GetDesign()
         return false;
     }
 
-    if (json_response.isMember("pixel_data") && json_response.isMember("duration"))
+    if (json_response.isMember("image") && json_response["image"].isMember("pixel_data") && json_response.
+        isMember("time_left"))
     {
-        std::string raw = json_response["pixel_data"].asString();
+        std::string raw = json_response["image"]["pixel_data"].asString();
 
         // Strip "Design " prefix if present
         const std::string prefix = "Design ";
@@ -186,13 +186,14 @@ bool QueueClient::GetDesign()
         std::string errs;
         std::istringstream ss(raw);
 
-        if (!Json::parseFromStream(builder, ss, &parsed, &errs)) {
+        if (!Json::parseFromStream(builder, ss, &parsed, &errs))
+        {
             std::fprintf(stderr, "Failed to parse pixel_data string: %s\n", errs.c_str());
             return false;
         }
 
         this->pixel_data = parsed;
-        this->display_duration = json_response["duration"].asInt();
+        this->display_duration = json_response["time_left"].asInt();
         return true;
     }
 
